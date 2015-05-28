@@ -165,7 +165,7 @@ With a URL like we built before: `'/search/feat-helipad/feat-swimming-pool/cap-2
 
 ```ruby
 {
-  capacity:           ['25+'],
+  capacity:           '25+',
   page:               2,
   feature:            ['helipad', 'swimming-pool'],
   something:          ['another', 'other'],
