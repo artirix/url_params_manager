@@ -1,5 +1,10 @@
 # UrlParamsManager
 
+[![Gem Version](https://badge.fury.io/rb/url_params_manager.svg)](http://badge.fury.io/rb/url_params_manager)
+[![Build Status](https://travis-ci.org/artirix/url_params_manager.svg?branch=master)](https://travis-ci.org/artirix/url_params_manager)
+[![Code Climate](https://codeclimate.com/github/artirix/url_params_manager/badges/gpa.svg)](https://codeclimate.com/github/artirix/url_params_manager)
+[![Test Coverage](https://codeclimate.com/github/artirix/url_params_manager/badges/coverage.svg)](https://codeclimate.com/github/artirix/url_params_manager/coverage)
+
 Allows SEO Friendly urls for search pages to be built easily.
  
 The urls will look like: `example.org/my-search/color-black/color-red/size-big/page-3` and will end up in this params: `{ color: ['black', 'red'], size: 'big', page: '3' }`.
