@@ -97,23 +97,37 @@ describe UrlParamsManager do
     end
   end
 
-  describe "filters from url" do
-    Given(:url_params) {
-      {
-        filters: 'feat-helipad/feat-swimming-pool/cap-25+/page-2',
-        some:    ['another', 'other']
+  describe 'filters from url' do
+    context 'real URL' do
+      Given(:url_params) {
+        {
+          filters: 'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+          some:    ['another', 'other']
+        }
       }
-    }
 
-    Given(:expected_filters) {
-      default_params.merge feature:   ['helipad', 'swimming-pool'],
-                           capacity:  '25+',
-                           something: ['another', 'other'],
-                           page:      '2'
+      Given(:expected_filters) {
+        default_params.merge feature:   ['helipad', 'swimming-pool'],
+                             capacity:  '25+',
+                             something: ['another', 'other'],
+                             page:      '2'
 
-    }
+      }
 
-    When(:filters) { subject.filters_from_url_params(url_params) }
-    Then { filters == expected_filters }
+      When(:filters) { subject.filters_from_url_params(url_params) }
+      Then { filters == expected_filters }
+    end
+
+    context 'URL with unrecognized indexed param' do
+      Given(:url_params) {
+        {
+          filters: 'feat-helipad/feat-swimming-pool/cap-25+/whoareyou-value/page-2',
+          some:    ['another', 'other']
+        }
+      }
+
+      When(:filters) { subject.filters_from_url_params(url_params) }
+      Then { expect(filters).to have_failed(UrlParamsManager::UnrecognisedPrefixError, "url part: whoareyou-value") }
+    end
   end
 end
