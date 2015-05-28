@@ -135,7 +135,7 @@ routes.rb file:
 
 Rails.application.routes.draw do
   
-  get 'search(/*filters)', to: 'articles#index', as: :articles_search
+  get 'search(/*filters)', to: 'articles#index', as: :my_search
 end
 ```
 
