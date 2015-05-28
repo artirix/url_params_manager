@@ -32,6 +32,17 @@ The "prefix -> name" map are set on the config of the UrlParamsManager.
 
 By default, if the config does not say otherwise, the prefix and the name are the same.
 
+important: if the param is an indexed param (it's shown in the path not in the querystring), then we have to add it to this hash, even with the same name:
+ie: 
+
+```ruby
+map = {
+  prefix:    :real_name,
+  same_name: :same_name,
+  page:      :page,
+}
+```
+
 ### Indexed vs non Indexed params
 
 Indexed params appear in the path, ordered (following a priority order set in the config of the UrlParamsManager).
