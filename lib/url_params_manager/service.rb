@@ -1,13 +1,24 @@
 module UrlParamsManager
   class Service
-    attr_reader :app_url_helpers, :url_to_filter_params, :indexed_url_params_order, :filter_to_url_params, :default_params
+    attr_reader :app_url_helpers,
+                :url_to_filter_params,
+                :indexed_url_params_order,
+                :filter_to_url_params,
+                :default_params,
+                :filter_params_treatment
 
-    def initialize(url_to_filter_params: nil, indexed_url_params_order: nil, app_url_helpers: nil, default_params: {})
+    def initialize(url_to_filter_params: nil,
+                   indexed_url_params_order: nil,
+                   app_url_helpers: nil,
+                   default_params: {},
+                   filter_params_treatment: ->(filter_params) { filter_params }
+    )
       @url_to_filter_params     = url_to_filter_params
       @filter_to_url_params     = url_to_filter_params.invert
       @indexed_url_params_order = indexed_url_params_order
       @app_url_helpers          = app_url_helpers
       @default_params           = default_params
+      @filter_params_treatment  = filter_params_treatment
     end
 
     # for url/path methods from filter args
@@ -31,7 +42,9 @@ module UrlParamsManager
         end
       end
 
-      filters.merge querystring_to_filters(params)
+      pars = filters.merge querystring_to_filters(params)
+
+      filter_params_treatment.call pars
     end
 
     def querystring_to_filters(querystring_params)
@@ -62,7 +75,8 @@ module UrlParamsManager
     end
 
     def url_args_from_filters(filter_args)
-      valid_filter_args = remove_defaults(filter_args)
+      filter_pars       = filter_params_treatment.call filter_args
+      valid_filter_args = remove_defaults(filter_pars)
       bare_args         = translate_filter_keys(valid_filter_args)
 
       in_uri_args       = bare_args.select { |(k, _)| indexed_url_params_order.include? k }

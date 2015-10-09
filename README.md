@@ -102,6 +102,12 @@ default_params = {
                             default_params:           default_params # Default Params map
 ```
 
+### `filter_params_treatment`
+
+`UrlParamsManager` object can receive a `filter_params_treatment` option with a callable object.
+The `filter_params` will be passed to that callable object before returning on `filters_from_url_params` calls
+as well as at the beginning of `url_args_from_filters` calls.
+
 ### Building URLs
  
 ```ruby
@@ -204,3 +210,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
+
+## Changeset
+
+### v.0.2.0
+
+- added `filter_params_treatment` option.

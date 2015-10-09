@@ -130,4 +130,69 @@ describe UrlParamsManager do
       Then { expect(filters).to have_failed(UrlParamsManager::UnrecognisedPrefixError, "url part: whoareyou-value") }
     end
   end
+
+  describe 'with `filter_params_treatment`' do
+
+    Given(:filter_params_treatment) do
+      ->(filter_params) do
+        if Array(filter_params[:stuff_to_treat]).size > 1
+          filter_params[:stuff_to_treat] = 'treated!'
+        end
+
+        filter_params
+      end
+    end
+
+    Given(:subject) do
+      described_class.for url_to_filter_params:     url_to_filter_params,
+                          indexed_url_params_order: indexed_url_params_order,
+                          app_url_helpers:          current_app_url_helpers,
+                          default_params:           default_params,
+                          filter_params_treatment:  filter_params_treatment
+    end
+
+    context 'treatment to be applied' do
+      Given(:url_params) {
+        {
+          filters:        'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+          some:           ['another', 'other'],
+          stuff_to_treat: ['open', 'closed'],
+        }
+      }
+
+      Given(:expected_filters) {
+        default_params.merge feature:   ['helipad', 'swimming-pool'],
+                             capacity:  '25+',
+                             something: ['another', 'other'],
+                             stuff_to_treat: 'treated!',
+                             page:      '2'
+
+      }
+
+      When(:filters) { subject.filters_from_url_params(url_params) }
+      Then { filters == expected_filters }
+    end
+
+    context 'treatment not to be applied' do
+      Given(:url_params) {
+        {
+          filters:        'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+          some:           ['another', 'other'],
+          stuff_to_treat: 'open',
+        }
+      }
+
+      Given(:expected_filters) {
+        default_params.merge feature:   ['helipad', 'swimming-pool'],
+                             capacity:  '25+',
+                             something: ['another', 'other'],
+                             stuff_to_treat: 'open',
+                             page:      '2'
+
+      }
+
+      When(:filters) { subject.filters_from_url_params(url_params) }
+      Then { filters == expected_filters }
+    end
+  end
 end
