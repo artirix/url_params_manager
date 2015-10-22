@@ -84,7 +84,7 @@ url_to_filter_params = {
   cap:  :capacity, # indexed => in URL
   some: :something, # not indexed => in querystring
   ndef: :non_default, # value with default
-  page: :page,
+  # page: :page, # if it is the same and it is present in `indexed_url_params_order`, we don't need to pass it.
 }
 
 # Default values for the params
@@ -181,6 +181,73 @@ With a URL like we built before: `'/search/feat-helipad/feat-swimming-pool/cap-2
 }
 ```
 
+## With Position-Defined params
+
+Sometimes we want the first url parts to have a preassigned meaning. For example, we may want something like 
+`/search/my-location/my-category/page-3`, where the first 2 params will be interpreted as `params[:locations]` and `params[:categories]`.
+
+With the `position_defined_url_parms` option we can pass a hash with the config for these kind of params. 
+
+Important observations:
+
+- the position-defined params hash is **ordered**. The position will be determined by the order of the keys of the config hash.
+- all position defined param needs a **placeholder**. This will be:
+  - ignored when translating from url to filter
+  - added to the url in its place if a posterior param is present, so we can respect the position order.
+- when the param has multiple values, instead of adding them in separate parts, we'll concatenate them using a separator:
+  - it can be passed as `multiple_separator` option
+  - if not passed, it will use a default separator `--`.
+- when recognising params from the url, we'll **stop looking for position defined params when we first recognise a prefix of a normal param**
+
+The last part is important because it allows us to combine normal indexed params with position based params. 
+
+Example:
+
+```ruby
+url_to_filter_params = {}
+indexed_url_params_order = [:by_prefix, :page]
+position_defined_url_parms = {
+  locations:  { placeholder: 'all-locations', multiple_separator: '--' },
+  categories: { placeholder: 'all-categories', multiple_separator: '_AND_' },
+  themes:     { placeholder: 'all-themes', multiple_separator: '--' },
+  offers:     { placeholder: 'all-offers' } # uses default separator
+}
+
+@upm = UrlParamsManager.for url_to_filter_params:       url_to_filter_params, # Param Name Map
+                            indexed_url_params_order:   indexed_url_params_order, # Indexed Params list
+                            position_defined_url_parms: position_defined_url_parms, # Position Defined params config
+                            app_url_helpers:            Rails.application.routes.url_helpers, # Object to receive the URL's Path calls (usually Rails URL Helpers)
+
+# FILTERS -> URL
+pars = {
+  categories:       ['my-cat', 'second-cat'],
+  offers:           'my-offer',
+  by_prefix_filter: ['hey', 'you'],
+  some:             ['other', 'another'],
+  page:             '2'
+}
+
+# it adds the needed placeholders
+expected_path = @upm.my_search_path(pars) 
+  # => '/search/all-locations/my-cat_AND_second-cat/all-themes/my-offer/by_prefix-hey/by_prefix-you/page-2?some%5B%5D=another&some%5B%5D=other'
+
+
+# example with less position based because we encounter one normal arg (page)
+url_params = {
+  filters: 'all-locations/my-cat_AND_second-cat/one-theme--second-theme/page-2'
+}
+expected_params = filters_from_url_params(url_params)
+ # => { 
+        categories:   ['my-cat', 'second-cat'],
+        themes:       ['one-theme', 'second-theme'],
+        page:         '2'
+      }
+
+# `all-locations`, being `locations` placeholder, is ignored
+# `page-2` is recognised as `page`, not as `offers`.
+```
+
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -216,3 +283,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 ### v.0.2.0
 
 - added `filter_params_treatment` option.
+
+### v.0.3.0
+
+- added `position_defined_url_parms` option.
