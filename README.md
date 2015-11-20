@@ -108,6 +108,14 @@ default_params = {
 The `filter_params` will be passed to that callable object before returning on `filters_from_url_params` calls
 as well as at the beginning of `url_args_from_filters` calls.
 
+### `always_lists_fields`
+
+`UrlParamsManager` object can receive a `always_lists_fields` option with:
+
+- a list of fields to be converted to Array (ie: `[:multi, :another_multi]`)
+- a hash having the fields as keys and values either `true` (convert to Array) or a regex or string to use to `split`): (ie: `{ multi: true, another_multi: ',' }`)
+
+
 ### Building URLs
  
 ```ruby
@@ -186,7 +194,7 @@ With a URL like we built before: `'/search/feat-helipad/feat-swimming-pool/cap-2
 Sometimes we want the first url parts to have a preassigned meaning. For example, we may want something like 
 `/search/my-location/my-category/page-3`, where the first 2 params will be interpreted as `params[:locations]` and `params[:categories]`.
 
-With the `position_defined_url_parms` option we can pass a hash with the config for these kind of params. 
+With the `position_defined_url_params` option we can pass a hash with the config for these kind of params. 
 
 Important observations:
 
@@ -206,7 +214,7 @@ Example:
 ```ruby
 url_to_filter_params = {}
 indexed_url_params_order = [:by_prefix, :page]
-position_defined_url_parms = {
+position_defined_url_params = {
   locations:  { placeholder: 'all-locations', multiple_separator: '--' },
   categories: { placeholder: 'all-categories', multiple_separator: '_AND_' },
   themes:     { placeholder: 'all-themes', multiple_separator: '--' },
@@ -215,7 +223,7 @@ position_defined_url_parms = {
 
 @upm = UrlParamsManager.for url_to_filter_params:       url_to_filter_params, # Param Name Map
                             indexed_url_params_order:   indexed_url_params_order, # Indexed Params list
-                            position_defined_url_parms: position_defined_url_parms, # Position Defined params config
+                            position_defined_url_params: position_defined_url_params, # Position Defined params config
                             app_url_helpers:            Rails.application.routes.url_helpers, # Object to receive the URL's Path calls (usually Rails URL Helpers)
 
 # FILTERS -> URL
@@ -284,6 +292,11 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 - added `filter_params_treatment` option.
 
-### v.0.3.0
+### v.0.3.0: YANKED!
 
-- added `position_defined_url_parms` option.
+- added `position_defined_url_params` option.
+
+
+### v.0.4.0
+- fixed typo in `position_defined_url_params` (it was position_defined_url_parms)
+- added `always_lists_fields` option.

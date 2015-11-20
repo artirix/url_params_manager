@@ -5,6 +5,8 @@ describe UrlParamsManager do
     expect(UrlParamsManager::VERSION).not_to be nil
   end
 
+  Given(:always_lists_fields) { {} }
+
   Given(:url_helper_method_module) {
     Module.new do
       def self.my_thing_path(params)
@@ -27,7 +29,8 @@ describe UrlParamsManager do
       described_class.for url_to_filter_params:     url_to_filter_params,
                           indexed_url_params_order: indexed_url_params_order,
                           app_url_helpers:          current_app_url_helpers,
-                          default_params:           default_params
+                          default_params:           default_params,
+                          always_lists_fields:      always_lists_fields
     end
 
     Given(:url_to_filter_params) {
@@ -151,7 +154,8 @@ describe UrlParamsManager do
                             indexed_url_params_order: indexed_url_params_order,
                             app_url_helpers:          current_app_url_helpers,
                             default_params:           default_params,
-                            filter_params_treatment:  filter_params_treatment
+                            filter_params_treatment:  filter_params_treatment,
+                            always_lists_fields:      always_lists_fields
       end
 
       context 'treatment to be applied' do
@@ -198,6 +202,84 @@ describe UrlParamsManager do
         Then { filters == expected_filters }
       end
     end
+
+    describe 'with `always_lists_fields`' do
+      context 'passing an array of fields' do
+        Given(:always_lists_fields) { [:multi, :another_multi] }
+        Given(:url_params) {
+          {
+            filters:       'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+            some:          ['another', 'other'],
+            multi:         'paco',
+            another_multi: 'yeah,bitch'
+          }
+        }
+
+        Given(:expected_filters) {
+          default_params.merge feature:       ['helipad', 'swimming-pool'],
+                               capacity:      '25+',
+                               something:     ['another', 'other'],
+                               page:          '2',
+                               multi:         ['paco'],
+                               another_multi: ['yeah,bitch']
+
+        }
+
+        When(:filters) { subject.filters_from_url_params(url_params) }
+        Then { filters == expected_filters }
+      end
+
+      context 'passing hash with fields as keys and `true` as values' do
+        Given(:always_lists_fields) { { multi: true, another_multi: true } }
+        Given(:url_params) {
+          {
+            filters:       'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+            some:          ['another', 'other'],
+            multi:         'paco',
+            another_multi: 'yeah,bitch'
+          }
+        }
+
+        Given(:expected_filters) {
+          default_params.merge feature:       ['helipad', 'swimming-pool'],
+                               capacity:      '25+',
+                               something:     ['another', 'other'],
+                               page:          '2',
+                               multi:         ['paco'],
+                               another_multi: ['yeah,bitch']
+
+        }
+
+        When(:filters) { subject.filters_from_url_params(url_params) }
+        Then { filters == expected_filters }
+      end
+
+      context 'passing hash with fields as keys and a string to use for `.split` as values' do
+        Given(:always_lists_fields) { { multi: true, another_multi: ',' } }
+        Given(:url_params) {
+          {
+            filters:       'feat-helipad/feat-swimming-pool/cap-25+/page-2',
+            some:          ['another', 'other'],
+            multi:         'paco',
+            another_multi: 'yeah,bitch'
+          }
+        }
+
+        Given(:expected_filters) {
+          default_params.merge feature:       ['helipad', 'swimming-pool'],
+                               capacity:      '25+',
+                               something:     ['another', 'other'],
+                               page:          '2',
+                               multi:         ['paco'],
+                               another_multi: ['yeah', 'bitch']
+
+        }
+
+        When(:filters) { subject.filters_from_url_params(url_params) }
+        Then { filters == expected_filters }
+      end
+
+    end
   end
 
   context 'for position defined filters' do
@@ -221,14 +303,15 @@ describe UrlParamsManager do
     }
 
     Given(:subject) do
-      described_class.for url_to_filter_params:       url_to_filter_params,
-                          indexed_url_params_order:   indexed_url_params_order,
-                          app_url_helpers:            current_app_url_helpers,
-                          default_params:             default_params,
-                          position_defined_url_parms: position_defined_url_parms
+      described_class.for url_to_filter_params:        url_to_filter_params,
+                          indexed_url_params_order:    indexed_url_params_order,
+                          app_url_helpers:             current_app_url_helpers,
+                          default_params:              default_params,
+                          position_defined_url_params: position_defined_url_params,
+                          always_lists_fields:         always_lists_fields
     end
 
-    Given(:position_defined_url_parms) do
+    Given(:position_defined_url_params) do
       {
         locations:  { placeholder: 'all-locations', multiple_separator: '--' },
         categories: { placeholder: 'all-categories', multiple_separator: '_AND_' },

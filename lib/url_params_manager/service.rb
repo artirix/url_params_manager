@@ -11,23 +11,26 @@ module UrlParamsManager
                 :indexed_url_params_order,
                 :filter_to_url_params,
                 :default_params,
-                :position_defined_url_parms,
-                :filter_params_treatment
+                :position_defined_url_params,
+                :filter_params_treatment,
+                :always_lists_fields
 
     def initialize(url_to_filter_params: nil,
                    indexed_url_params_order: nil,
                    app_url_helpers: nil,
                    default_params: {},
-                   position_defined_url_parms: nil,
+                   always_lists_fields: {},
+                   position_defined_url_params: nil,
                    filter_params_treatment: DEFAULT_FILTER_PARAMS_TREATMENT
     )
-      @url_to_filter_params       = url_to_filter_params
-      @filter_to_url_params       = url_to_filter_params.invert
-      @indexed_url_params_order   = indexed_url_params_order.map &:to_s
-      @app_url_helpers            = app_url_helpers
-      @default_params             = default_params
-      @position_defined_url_parms = position_defined_url_parms.presence || {}
-      @filter_params_treatment    = filter_params_treatment
+      @url_to_filter_params        = url_to_filter_params
+      @filter_to_url_params        = url_to_filter_params.invert
+      @indexed_url_params_order    = indexed_url_params_order.map &:to_s
+      @app_url_helpers             = app_url_helpers
+      @default_params              = default_params
+      @position_defined_url_params = position_defined_url_params.presence || {}
+      @filter_params_treatment     = filter_params_treatment
+      @always_lists_fields         = prepare_always_lists_fields(always_lists_fields)
     end
 
     # for url/path methods from filter args
@@ -43,7 +46,7 @@ module UrlParamsManager
 
       pars = filters.merge querystring_to_filters(params)
 
-      filter_params_treatment.call pars
+      filter_params(pars)
     end
 
     def querystring_to_filters(querystring_params)
@@ -67,7 +70,7 @@ module UrlParamsManager
 
 
     def url_args_from_filters(filter_args)
-      filter_pars       = filter_params_treatment.call filter_args
+      filter_pars       = filter_params(filter_args)
       valid_filter_args = remove_defaults(filter_pars)
 
       bare_args = translate_filter_keys(valid_filter_args)
@@ -89,11 +92,11 @@ module UrlParamsManager
     end
 
     def add_placeholders(sorted_uri_args)
-      position_based_keys = position_defined_url_parms.keys.reverse
+      position_based_keys = position_defined_url_params.keys.reverse
       need_placeholder    = false
 
       position_based_keys.inject(sorted_uri_args) do |args, key|
-        options          = position_defined_url_parms[key] || {}
+        options          = position_defined_url_params[key] || {}
         need_placeholder = need_placeholder || args[key].present?
 
         if need_placeholder && args[key].blank?
@@ -128,12 +131,12 @@ module UrlParamsManager
     end
 
     def url_param_in_path?(url_param)
-      indexed_url_params_order.include?(url_param.to_s) || position_defined_url_parms.key?(url_param)
+      indexed_url_params_order.include?(url_param.to_s) || position_defined_url_params.key?(url_param)
     end
 
     def sort_uri_filters(in_uri_args)
-      position_uri_args = in_uri_args.select { |k, _| position_defined_url_parms.key? k }
-      prefix_uri_args   = in_uri_args.reject { |k, _| position_defined_url_parms.key? k }
+      position_uri_args = in_uri_args.select { |k, _| position_defined_url_params.key? k }
+      prefix_uri_args   = in_uri_args.reject { |k, _| position_defined_url_params.key? k }
 
       final_list = []
 
@@ -147,7 +150,7 @@ module UrlParamsManager
     end
 
     def sort_uri_filters_by_position(position_uri_args)
-      position_keys = position_defined_url_parms.keys
+      position_keys = position_defined_url_params.keys
       position_uri_args.to_a.sort_by do |k, _|
         position_keys.index(k)
       end
@@ -160,15 +163,15 @@ module UrlParamsManager
     end
 
     def generate_uri_part(in_uri_args)
-      position_uri_args = in_uri_args.select { |k, _| position_defined_url_parms.key? k }
-      prefix_uri_args   = in_uri_args.reject { |k, _| position_defined_url_parms.key? k }
+      position_uri_args = in_uri_args.select { |k, _| position_defined_url_params.key? k }
+      prefix_uri_args   = in_uri_args.reject { |k, _| position_defined_url_params.key? k }
 
       generate_uri_parts_by_position(position_uri_args).concat generate_uri_parts_by_prefix(prefix_uri_args)
     end
 
     def generate_uri_parts_by_position(position_uri_args)
       position_uri_args.inject([]) do |uri, (key, value)|
-        options = position_defined_url_parms[key]
+        options = position_defined_url_params[key]
 
         prefix     = options[:prefix].present? ? "#{options[:prefix]}-" : EMPTY_STRING
         uri_values = []
@@ -213,13 +216,13 @@ module UrlParamsManager
 
       # the moment we recognise one param with a prefix based, we assume that the position based have stopped
       prefix_based_recognised = false
-      position_defined_raw = raw.inject([]) do |list, url_part|
+      position_defined_raw    = raw.inject([]) do |list, url_part|
         prefix_based_recognised ||= recognised_prefix? url_part
         list << url_part unless prefix_based_recognised
         list
       end
 
-      available_position_params = position_defined_url_parms.to_a.take(position_defined_raw.size)
+      available_position_params = position_defined_url_params.to_a.take(position_defined_raw.size)
       used_positions            = 0
 
       available_position_params.each_with_index do |(key, options), index|
@@ -282,6 +285,36 @@ module UrlParamsManager
 
     def get_separator_from_position_options(options)
       options[:multiple_separator].presence || DEFAULT_MULTIPLE_SEPARATOR_FOR_POSITION
+    end
+
+    def filter_params(filter_args)
+      filter_args = filter_args.deep_dup
+      convert_to_lists(filter_args)
+      filter_params_treatment.call filter_args
+    end
+
+    def convert_to_lists(filter_args)
+      always_lists_fields.each do |field, config|
+        if filter_args.key? field
+          case config
+          when String, Regexp
+            filter_args[field] = filter_args[field].to_s.split(config)
+          else
+            filter_args[field] = Array(filter_args[field])
+          end
+        end
+      end
+    end
+
+    def prepare_always_lists_fields(given)
+      case given
+      when Array
+        given.map { |a| [a, true] }.to_h
+      when Hash
+        given
+      else
+        { given.to_sym => true }
+      end
     end
 
   end
