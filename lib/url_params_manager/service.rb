@@ -4,7 +4,7 @@ module UrlParamsManager
     PREFIX_SEPARATOR                        = '-'.freeze
     DEFAULT_PLACEHOLDER                     = '_'.freeze
     DEFAULT_MULTIPLE_SEPARATOR_FOR_POSITION = '--'.freeze
-    DEFAULT_FILTER_PARAMS_TREATMENT         = ->(filter_params) { filter_params }
+    UNITY_FUNCTION                          = ->(filter_params) { filter_params }
 
     attr_reader :app_url_helpers,
                 :url_to_filter_params,
@@ -13,6 +13,7 @@ module UrlParamsManager
                 :default_params,
                 :position_defined_url_params,
                 :filter_params_treatment,
+                :filter_params_pretreatment,
                 :always_lists_fields
 
     def initialize(url_to_filter_params: nil,
@@ -21,7 +22,8 @@ module UrlParamsManager
                    default_params: {},
                    always_lists_fields: {},
                    position_defined_url_params: nil,
-                   filter_params_treatment: DEFAULT_FILTER_PARAMS_TREATMENT
+                   filter_params_pretreatment: UNITY_FUNCTION,
+                   filter_params_treatment: UNITY_FUNCTION
     )
       @url_to_filter_params        = url_to_filter_params
       @filter_to_url_params        = url_to_filter_params.invert
@@ -30,6 +32,7 @@ module UrlParamsManager
       @default_params              = default_params
       @position_defined_url_params = position_defined_url_params.presence || {}
       @filter_params_treatment     = filter_params_treatment
+      @filter_params_pretreatment  = filter_params_pretreatment
       @always_lists_fields         = prepare_always_lists_fields(always_lists_fields)
     end
 
@@ -39,9 +42,8 @@ module UrlParamsManager
     end
 
     # for filters from url/path params
-    def filters_from_url_params(params)
-      params = params.to_h.symbolize_keys
-
+    def filters_from_url_params(given_params)
+      params  = filter_params_pretreatment.call given_params.to_h.symbolize_keys
       filters = unfold_filters(params)
 
       pars = filters.merge querystring_to_filters(params)

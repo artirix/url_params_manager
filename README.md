@@ -108,6 +108,10 @@ default_params = {
 The `filter_params` will be passed to that callable object before returning on `filters_from_url_params` calls
 as well as at the beginning of `url_args_from_filters` calls.
 
+### `filter_params_pretreatment`
+
+same as `filter_params_treatment` but it's applied to the url_params at the beginning of `filters_from_url_params` calls only, right after symbolizing the keys.
+
 ### `always_lists_fields`
 
 `UrlParamsManager` object can receive a `always_lists_fields` option with:
@@ -288,15 +292,20 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Changeset
 
-### v.0.2.0
+### v.0.5.0
 
-- added `filter_params_treatment` option.
-
-### v.0.3.0: YANKED!
-
-- added `position_defined_url_params` option.
-
+- added `filter_params_pretreatment` option.
 
 ### v.0.4.0
 - fixed typo in `position_defined_url_params` (it was position_defined_url_parms)
 - added `always_lists_fields` option.
+
+### v.0.2.0
+
+- added `filter_params_treatment` option.
+
+## Yanked Versions
+
+### v.0.3.0: YANKED!
+
+- added `position_defined_url_params` option.
