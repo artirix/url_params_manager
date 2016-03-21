@@ -205,7 +205,7 @@ Important observations:
 - the position-defined params hash is **ordered**. The position will be determined by the order of the keys of the config hash.
 - all position defined param needs a **placeholder**. This will be:
   - ignored when translating from url to filter
-  - added to the url in its place if a posterior param is present, so we can respect the position order.
+  - added to the url in its place if a posterior param is present (or if `force_placeholder` option is passed as true), so we can respect the position order.
 - when the param has multiple values, instead of adding them in separate parts, we'll concatenate them using a separator:
   - it can be passed as `multiple_separator` option
   - if not passed, it will use a default separator `--`.
@@ -291,6 +291,10 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 5. Create a new Pull Request
 
 ## Changeset
+
+### v.0.6.0
+
+- added `force_placeholder` option to `position_defined_url_params`.
 
 ### v.0.5.0
 

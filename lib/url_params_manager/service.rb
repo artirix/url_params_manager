@@ -89,8 +89,11 @@ module UrlParamsManager
       # converting into string
       filters_uri_part  = generate_uri_part sorted_uri_args
 
+      # remove empty elements
+      present_uri_filters = filters_uri_part.reject &:blank?
+
       # query string args + filter param for the urlpath helper methods
-      query_string_args.merge filters: filters_uri_part.join('/')
+      query_string_args.merge filters: present_uri_filters.join('/')
     end
 
     def add_placeholders(sorted_uri_args)
@@ -101,7 +104,7 @@ module UrlParamsManager
         options          = position_defined_url_params[key] || {}
         need_placeholder = need_placeholder || args[key].present?
 
-        if need_placeholder && args[key].blank?
+        if args[key].blank? && (need_placeholder || options[:force_placeholder])
           args[key] = options[:placeholder] || DEFAULT_PLACEHOLDER
         end
 

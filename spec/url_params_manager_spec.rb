@@ -368,7 +368,7 @@ describe UrlParamsManager do
 
     Given(:position_defined_url_params) do
       {
-        locations:  { placeholder: 'all-locations', multiple_separator: '--' },
+        locations:  { placeholder: 'all-locations', multiple_separator: '--', force_placeholder: true },
         categories: { placeholder: 'all-categories', multiple_separator: '_AND_' },
         themes:     { placeholder: 'all-themes', multiple_separator: '--' },
         offers:     { placeholder: 'all-offers' }
@@ -457,6 +457,40 @@ describe UrlParamsManager do
 
       context 'filters -> url' do
         When(:path) { subject.my_thing_path(expected_filters) }
+        Then { URI.parse(path).path == URI.parse(expected_path).path }
+      end
+    end
+
+    context 'only placeholder based, with some missing but showing the one with force_placeholder, and page (ignoring empty values)' do
+      Given(:position_defined_filters) do
+        'all-locations/page-2'
+      end
+
+      Given(:extra_filters) do
+        {
+          categories:   [],
+          themes:       [],
+          first_query:  ['a', 'b'],
+          second_query: 'c',
+          page:         '2'
+        }
+      end
+
+      Given(:given_filters) do
+        default_params.merge extra_filters
+      end
+
+      Given(:expected_filters) do
+        default_params.merge extra_filters.reject { |_, v| v.blank? }
+      end
+
+      context 'url -> filters' do
+        When(:filters) { subject.filters_from_url_params(url_params) }
+        Then { filters == expected_filters }
+      end
+
+      context 'filters -> url' do
+        When(:path) { subject.my_thing_path(given_filters) }
         Then { URI.parse(path).path == URI.parse(expected_path).path }
       end
     end
